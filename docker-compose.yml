@@ -1,0 +1,106 @@
+services:
+  # Spark cluster for data processing (simulates Azure Databricks)
+  spark-master:
+    image: bitnami/spark:3.4
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    ports:
+      - "8081:8080"
+      - "7077:7077"
+      - "4040:4040"
+    volumes:
+      - ./data:/opt/bitnami/spark/data
+      - ./transformation:/opt/bitnami/spark/transformation
+      - ./ingestion:/opt/bitnami/spark/ingestion
+      - ./delivery:/opt/bitnami/spark/delivery
+      - ./utils:/opt/bitnami/spark/utils
+      - ./scripts:/opt/bitnami/spark/scripts
+      - ./logs:/opt/bitnami/spark/logs
+    networks:
+      - yelp-network
+
+  spark-worker:
+    image: bitnami/spark:3.4
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    depends_on:
+      - spark-master
+    volumes:
+      - ./data:/opt/bitnami/spark/data
+      - ./transformation:/opt/bitnami/spark/transformation
+      - ./ingestion:/opt/bitnami/spark/ingestion
+      - ./delivery:/opt/bitnami/spark/delivery
+      - ./utils:/opt/bitnami/spark/utils
+      - ./scripts:/opt/bitnami/spark/scripts
+      - ./logs:/opt/bitnami/spark/logs
+    networks:
+      - yelp-network
+
+  # PostgreSQL database (simulates Azure Synapse Analytics)
+  postgres:
+    image: postgres:15
+    container_name: postgres-synapse
+    environment:
+      POSTGRES_DB: yelp_warehouse
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d/
+    networks:
+      - yelp-network
+
+  # Jupyter Notebook for analysis and monitoring
+  jupyter:
+    image: jupyter/pyspark-notebook:spark-3.4.1
+    container_name: jupyter-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data:/home/jovyan/work/data
+      - ./utils:/home/jovyan/work/utils
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - SPARK_MASTER=spark://spark-master:7077
+    networks:
+      - yelp-network
+
+  # MinIO for object storage (simulates Azure Data Lake Storage)
+  minio:
+    image: minio/minio
+    container_name: minio-storage
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - yelp-network
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  yelp-network:
+    driver: bridge

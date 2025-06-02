@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# Data
+data/input/        # Exclude input folder with raw Yelp dataset
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Docker
+*.pid
+*.sock
+
+# VSCode or PyCharm settings
+.vscode/
+.idea/
+
+# Python dependencies
+*.egg-info/
+dist/
+build/
+
+# Ignore test outputs or temporary files
+*.tmp
+*.bak
+*.swp
